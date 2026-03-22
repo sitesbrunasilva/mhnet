@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>ValeNet Telecom - Sistema de Checklists</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1E1B8F 0%, #2A3FD6 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .logo p {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-role {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .logout-btn {
+            background: #FF5A00;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #FF7A1A;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background: #FF5A00;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary:hover {
+            background: #FF7A1A;
+        }
+
+        .btn-secondary {
+            background: #5A2EA6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #6d3eb8;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #1E1B8F;
+            color: white;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        tbody tr:hover {
+            background: #eef2ff;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-finalizada {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-aberta {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-execucao {
+            background: #e9d5ff;
+            color: #6b21a8;
+        }
+
+        .badge-tecnico {
+            background: #e9d5ff;
+            color: #6b21a8;
+        }
+
+        .badge-admin {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.625rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 700px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .close-modal {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #6b7280;
+        }
+
+        .pergunta-item {
+            background: #f9fafb;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .pergunta-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .user-item:hover {
+            background: #f3f4f6;
+        }
+
+        .user-item input {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid #E5E7EB;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #FF5A00;
+            border-bottom: 2px solid #FF5A00;
+            margin-bottom: -2px;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .info-message {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+            .header-content {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>ValeNet Telecom</h1>
+                <p>Sistema de Checklists Técnicos</p>
+            </div>
+            <div class="user-info" id="userInfo">
+                <span id="userName" class="user-role"></span>
+                <button class="logout-btn" onclick="logout()">Sair</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="app">
+        <!-- Tela de Login -->
+        <div id="loginScreen" class="card" style="max-width: 400px; margin: 4rem auto;">
+            <h2 style="color: #1E1B8F; margin-bottom: 1.5rem;">Acesso ao Sistema</h2>
+            <div id="loginMessage"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" required placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary" style="width: 100%;">Entrar</button>
+            </form>
+            <div style="margin-top: 1rem; font-size: 0.75rem; color: #6b7280; text-align: center;">
+                <p>Usuários cadastrados: admin@valenet.com / tecnico@valenet.com</p>
+            </div>
+        </div>
+
+        <!-- Dashboard Principal -->
+        <div id="dashboardScreen" style="display: none;">
+            <div class="tabs" id="tabsContainer">
+                <div class="tab" onclick="switchTab('checklists')">Checklists</div>
+                <div class="tab" onclick="switchTab('relatorios')">Relatórios</div>
+                <div class="tab admin-only" onclick="switchTab('gerenciar')" style="display: none;">Gerenciar</div>
+            </div>
+
+            <!-- Tab Checklists -->
+            <div id="tabChecklists">
+                <div class="card">
+                    <h3 style="color: #1E1B8F; margin-bottom: 1rem;">Meus Checklists</h3>
+                    <div class="table-container">
+                        <table id="checklistsTable">
+                            <thead>香水<th>Nome</th><th>Perguntas</th><th>Status</th><th>Ações</th> </thead>
+                            <tbody id="checklistsBody"></tbody>
+                          </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Relatórios -->
+            <div id="tabRelatorios" style="display: none;">
+                <div class="card">
+                    <h3 style="color: #1E1B8F; margin-bottom: 1rem;">Filtros</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="form-group">
+                            <label>Checklist</label>
+                            <select id="filtroChecklist"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Técnico</label>
+                            <select id="filtroTecnico"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select id="filtroStatus">
+                                <option value="">Todos</option>
+                                <option value="aberta">Em Aberto</option>
+                                <option value="execucao">Em Execução</option>
+                                <option value="finalizada">Finalizada</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button class="btn-primary" onclick="aplicarFiltros()">Aplicar Filtros</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="color: #1E1B8F; margin-bottom: 1rem;">Respostas</h3>
+                    <div class="table-container">
+                        <table id="respostasTable">
+                            <thead>香水<th>Checklist</th><th>Técnico</th><th>Data</th><th>Status</th><th>Detalhes</th> </thead>
+                            <tbody id="respostasBody"></tbody>
+                          </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Gerenciar -->
+            <div id="tabGerenciar" style="display: none;">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="color: #1E1B8F;">Gerenciar Checklists</h3>
+                        <button class="btn-primary" onclick="abrirModalChecklist()">+ Novo Checklist</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="gerenciarChecklistsTable">
+                            <thead>香水<th>Nome</th><th>Criado por</th><th>Data</th><th>Perguntas</th><th>Usuários Vinculados</th><th>Ações</th> </thead>
+                            <tbody id="gerenciarChecklistsBody"></tbody>
+                          </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Checklist -->
+    <div id="modalChecklist" class="modal">
+        <div class="modal-content" style="width: 90%; max-width: 900px;">
+            <div class="modal-header">
+                <h3 id="modalChecklistTitle">Novo Checklist</h3>
+                <span class="close-modal" onclick="fecharModalChecklist()">&times;</span>
+            </div>
+            <form id="checklistForm">
+                <div class="form-group">
+                    <label>Nome do Checklist</label>
+                    <input type="text" id="checklistNome" required>
+                </div>
+                <div class="form-group">
+                    <label>Descrição</label>
+                    <textarea id="checklistDescricao" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Vincular a Técnicos</label>
+                    <div id="userListContainer" class="user-list">
+                        <div class="info-message">Carregando técnicos...</div>
+                    </div>
+                </div>
+                
+                <h4 style="margin: 1rem 0 0.5rem;">Perguntas</h4>
+                <div id="perguntasContainer"></div>
+                
+                <button type="button" class="btn-secondary" onclick="adicionarPergunta()">+ Adicionar Pergunta</button>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn-secondary" onclick="fecharModalChecklist()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Checklist</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Responder -->
+    <div id="modalResponder" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="responderChecklistTitle">Responder Checklist</h3>
+                <span class="close-modal" onclick="fecharModalResponder()">&times;</span>
+            </div>
+            <form id="responderForm">
+                <div id="perguntasRespostaContainer"></div>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn-secondary" onclick="fecharModalResponder()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Enviar Respostas</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Detalhes -->
+    <div id="modalDetalhes" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Detalhes da Resposta</h3>
+                <span class="close-modal" onclick="fecharModalDetalhes()">&times;</span>
+            </div>
+            <div id="detalhesConteudo"></div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ==================== CONFIGURAÇÃO ====================
+            // ATUALIZE COM SEUS DADOS DO SUPABASE
+            const SUPABASE_URL = 'https://zxrpyzqtnqzirrldxiso.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_QmCA6aONN207gVb9l_HcRQ_GFNN2CAG';
+            
+            let supabaseClient = null;
+            let currentUser = null;
+            let currentUserRole = null;
+            let currentChecklistEdit = null;
+            let perguntaCounter = 0;
+            
+            function initSupabase() {
+                if (!supabaseClient) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                }
+                return supabaseClient;
+            }
+            
+            function showMessage(elementId, message, type) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = `<div class="${type}-message">${message}</div>`;
+                    setTimeout(() => { element.innerHTML = ''; }, 5000);
+                }
+            }
+            
+            // ==================== LOGIN ====================
+const loginForm = document.getElementById('loginForm');
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        
+        try {
+            const supabase = initSupabase();
+            console.log('Tentando login com:', email);
+            
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) throw error;
+            
+            if (!data.user) throw new Error('Usuário não encontrado');
+            
+            currentUser = data.user;
+            console.log('Usuário autenticado:', currentUser.id);
+            
+            // Tentar buscar o perfil - se falhar, criar um perfil temporário
+            let profile = null;
+            let profileError = null;
+            
+            try {
+                const result = await supabase
+                    .from('profiles')
+                    .select('role, name')
+                    .eq('id', currentUser.id)
+                    .single();
+                
+                if (result.error) {
+                    profileError = result.error;
+                    console.error('Erro ao buscar perfil:', result.error);
+                } else {
+                    profile = result.data;
+                }
+            } catch (err) {
+                console.error('Exceção ao buscar perfil:', err);
+                profileError = err;
+            }
+            
+            // Se não encontrou perfil, criar um padrão
+            if (!profile) {
+                console.log('Criando perfil padrão para o usuário...');
+                
+                // Determinar o role baseado no email
+                let role = 'tecnico';
+                let name = email.split('@')[0];
+                
+                if (email.includes('admin')) {
+                    role = 'admin';
+                    name = 'Administrador';
+                }
+                
+                const { data: newProfile, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert([{
+                        id: currentUser.id,
+                        name: name,
+                        role: role,
+                        email: email
+                    }])
+                    .select()
+                    .single();
+                
+                if (insertError) {
+                    console.error('Erro ao criar perfil:', insertError);
+                    throw new Error('Não foi possível criar o perfil do usuário. Verifique as permissões.');
+                }
+                
+                profile = newProfile;
+                console.log('Perfil criado com sucesso:', profile);
+            }
+            
+            currentUserRole = profile.role;
+            document.getElementById('userName').textContent = `${profile.name} (${profile.role})`;
+            
+            if (profile.role === 'admin' || profile.role === 'analista') {
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+            }
+            
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboardScreen').style.display = 'block';
+            
+            await carregarDados();
+            
+        } catch (error) {
+            console.error('Erro no login:', error);
+            showMessage('loginMessage', error.message || 'Erro ao fazer login. Verifique suas credenciais.', 'error');
+        }
+    });
+}
+            
+            async function logout() {
+                const supabase = initSupabase();
+                await supabase.auth.signOut();
+                location.reload();
+            }
+            
+            // ==================== CARREGAR DADOS ====================
+            async function carregarDados() {
+                await carregarChecklists();
+                await carregarRespostas();
+                if (currentUserRole === 'admin' || currentUserRole === 'analista') {
+                    await carregarGerenciarChecklists();
+                    await carregarFiltros();
+                }
+            }
+            
+            async function carregarChecklists() {
+                const supabase = initSupabase();
+                let query = supabase.from('checklists').select('*');
+                
+                if (currentUserRole === 'tecnico') {
+                    const { data: userChecklists } = await supabase
+                        .from('checklist_usuarios')
+                        .select('checklist_id')
+                        .eq('usuario_id', currentUser.id);
+                        
+                    const checklistIds = userChecklists?.map(c => c.checklist_id) || [];
+                    if (checklistIds.length > 0) {
+                        query = query.in('id', checklistIds);
+                    } else {
+                        query = query.eq('id', 0);
+                    }
+                }
+                
+                const { data, error } = await query.order('created_at', { ascending: false });
+                if (error) { console.error('Erro checklists:', error); return; }
+                
+                const tbody = document.getElementById('checklistsBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                for (const checklist of data || []) {
+                    let status = 'aberta';
+                    
+                    if (currentUserRole === 'tecnico') {
+                        const { data: respostas } = await supabase
+                            .from('respostas')
+                            .select('id, status')
+                            .eq('checklist_id', checklist.id)
+                            .eq('tecnico_id', currentUser.id)
+                            .single();
+                        if (respostas) {
+                            status = respostas.status;
+                        }
+                    }
+                    
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                         <td>${checklist.nome}</td>
+                         <td>${checklist.perguntas?.length || 0}</td>
+                         <td><span class="badge badge-${status}">${getStatusText(status)}</span></td>
+                         <td>
+                            ${(currentUserRole === 'tecnico' && status !== 'finalizada') ? 
+                                `<button class="btn-primary" style="padding: 0.25rem 0.75rem;" onclick="window.abrirModalResponder(${checklist.id})">Responder</button>` : 
+                                (currentUserRole === 'tecnico' ? 'Finalizado' : '')}
+                         </td>
+                    `;
+                }
+            }
+            
+            async function carregarRespostas() {
+                const supabase = initSupabase();
+                let query = supabase
+                    .from('respostas')
+                    .select(`*, checklists (nome), profiles (name)`)
+                    .order('created_at', { ascending: false });
+                    
+                if (currentUserRole === 'tecnico') {
+                    query = query.eq('tecnico_id', currentUser.id);
+                }
+                
+                const { data, error } = await query;
+                if (error) return;
+                
+                const tbody = document.getElementById('respostasBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                data?.forEach(resposta => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                         <td>${resposta.checklists?.nome || '-'}</td>
+                         <td>${resposta.profiles?.name || '-'}</td>
+                         <td>${new Date(resposta.created_at).toLocaleDateString('pt-BR')}</td>
+                         <td><span class="badge badge-${resposta.status}">${getStatusText(resposta.status)}</span></td>
+                         <td><button class="btn-primary" style="padding: 0.25rem 0.75rem;" onclick="window.verDetalhesResposta(${resposta.id})">Ver</button></td>
+                    `;
+                });
+            }
+            
+            async function carregarGerenciarChecklists() {
+                const supabase = initSupabase();
+                const { data, error } = await supabase
+                    .from('checklists')
+                    .select(`*, profiles (name)`)
+                    .order('created_at', { ascending: false });
+                    
+                if (error) return;
+                
+                const tbody = document.getElementById('gerenciarChecklistsBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                for (const checklist of data || []) {
+                    const { data: usuariosVinculados } = await supabase
+                        .from('checklist_usuarios')
+                        .select('profiles(name)')
+                        .eq('checklist_id', checklist.id);
+                        
+                    const nomesUsuarios = usuariosVinculados?.map(u => u.profiles?.name).filter(n => n).join(', ') || 'Nenhum';
+                    
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                         <td>${checklist.nome}</td>
+                         <td>${checklist.profiles?.name || '-'}</td>
+                         <td>${new Date(checklist.created_at).toLocaleDateString('pt-BR')}</td>
+                         <td>${checklist.perguntas?.length || 0}</td>
+                        <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${nomesUsuarios}</td>
+                         <td>
+                            <button class="btn-secondary" style="padding: 0.25rem 0.75rem; margin-right: 0.5rem;" onclick="window.editarChecklist(${checklist.id})">Editar</button>
+                            <button class="btn-primary" style="padding: 0.25rem 0.75rem;" onclick="window.verRespostasChecklist(${checklist.id})">Ver Respostas</button>
+                         </td>
+                    `;
+                }
+            }
+            
+            async function carregarFiltros() {
+                const supabase = initSupabase();
+                const { data: checklists } = await supabase.from('checklists').select('id, nome');
+                const { data: tecnicos } = await supabase.from('profiles').select('id, name').eq('role', 'tecnico');
+                
+                const selectChecklist = document.getElementById('filtroChecklist');
+                const selectTecnico = document.getElementById('filtroTecnico');
+                
+                if (selectChecklist) {
+                    selectChecklist.innerHTML = '<option value="">Todos</option>';
+                    checklists?.forEach(c => {
+                        selectChecklist.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+                    });
+                }
+                
+                if (selectTecnico) {
+                    selectTecnico.innerHTML = '<option value="">Todos</option>';
+                    tecnicos?.forEach(t => {
+                        selectTecnico.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                    });
+                }
+            }
+            
+            async function aplicarFiltros() {
+                const supabase = initSupabase();
+                const checklistId = document.getElementById('filtroChecklist')?.value;
+                const tecnicoId = document.getElementById('filtroTecnico')?.value;
+                const status = document.getElementById('filtroStatus')?.value;
+                
+                let query = supabase
+                    .from('respostas')
+                    .select(`*, checklists (nome), profiles (name)`);
+                    
+                if (checklistId) query = query.eq('checklist_id', checklistId);
+                if (tecnicoId) query = query.eq('tecnico_id', tecnicoId);
+                if (status) query = query.eq('status', status);
+                
+                const { data, error } = await query.order('created_at', { ascending: false });
+                if (error) return;
+                
+                const tbody = document.getElementById('respostasBody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                
+                data?.forEach(resposta => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                         <td>${resposta.checklists?.nome || '-'}</td>
+                         <td>${resposta.profiles?.name || '-'}</td>
+                         <td>${new Date(resposta.created_at).toLocaleDateString('pt-BR')}</td>
+                         <td><span class="badge badge-${resposta.status}">${getStatusText(resposta.status)}</span></td>
+                         <td><button class="btn-primary" style="padding: 0.25rem 0.75rem;" onclick="window.verDetalhesResposta(${resposta.id})">Ver</button></td>
+                    `;
+                });
+            }
+            
+            // ==================== VINCULAÇÃO DE USUÁRIOS ====================
+            async function carregarListaUsuarios(selectedIds = []) {
+                const supabase = initSupabase();
+                const container = document.getElementById('userListContainer');
+                if (!container) return;
+                
+                try {
+                    console.log('Buscando técnicos...');
+                    
+                    // Buscar todos os perfis com role = 'tecnico'
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('id, name, role')
+                        .eq('role', 'tecnico')
+                        .order('name');
+                    
+                    console.log('Resultado da busca:', data);
+                    
+                    if (error) {
+                        console.error('Erro ao buscar técnicos:', error);
+                        container.innerHTML = `<div class="error-message">Erro ao carregar técnicos: ${error.message}</div>`;
+                        return;
+                    }
+                    
+                    if (!data || data.length === 0) {
+                        container.innerHTML = `
+                            <div class="info-message">
+                                Nenhum técnico cadastrado.<br>
+                                Para cadastrar um técnico, execute no SQL Editor do Supabase:<br>
+                                <code style="background: #f3f4f6; padding: 0.25rem; display: block; margin-top: 0.5rem;">
+                                INSERT INTO profiles (id, name, role) <br>
+                                VALUES ('${currentUser.id}', 'Nome do Técnico', 'tecnico');
+                                </code>
+                            </div>
+                        `;
+                        return;
+                    }
+                    
+                    container.innerHTML = '';
+                    data.forEach(user => {
+                        const isChecked = selectedIds.includes(user.id);
+                        const div = document.createElement('div');
+                        div.className = 'user-item';
+                        div.innerHTML = `
+                            <input type="checkbox" value="${user.id}" id="user_${user.id}" ${isChecked ? 'checked' : ''}>
+                            <label for="user_${user.id}" style="margin: 0; cursor: pointer; flex: 1;">${user.name}</label>
+                            <span class="badge badge-${user.role}" style="font-size: 0.7rem;">${user.role}</span>
+                        `;
+                        container.appendChild(div);
+                    });
+                    
+                } catch (err) {
+                    console.error('Erro inesperado:', err);
+                    container.innerHTML = `<div class="error-message">Erro ao carregar técnicos: ${err.message}</div>`;
+                }
+            }
+            
+            // ==================== PERGUNTAS DINÂMICAS ====================
+            function adicionarPergunta() {
+                const container = document.getElementById('perguntasContainer');
+                const perguntaDiv = document.createElement('div');
+                perguntaDiv.className = 'pergunta-item';
+                const currentId = perguntaCounter;
+                perguntaDiv.id = `pergunta_${currentId}`;
+                
+                perguntaDiv.innerHTML = `
+                    <div class="pergunta-header">
+                        <span>Pergunta ${perguntaCounter + 1}</span>
+                        <button type="button" onclick="removerPergunta('pergunta_${currentId}')" style="background: none; border: none; color: #ef4444; cursor: pointer;">×</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Texto da Pergunta</label>
+                        <input type="text" class="pergunta-texto" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select class="pergunta-tipo" onchange="mudarTipoPergunta(this)">
+                            <option value="text">Texto Livre</option>
+                            <option value="textarea">Texto Longo</option>
+                            <option value="select">Combo Box</option>
+                            <option value="radio">Múltipla Escolha</option>
+                            <option value="radio_obs">Múltipla Escolha c/ Observação</option>
+                            <option value="date">Data</option>
+                            <option value="file">Foto</option>
+                        </select>
+                    </div>
+                    <div class="pergunta-opcoes" style="display: none;">
+                        <label>Opções (separadas por vírgula)</label>
+                        <input type="text" class="pergunta-opcoes-input" placeholder="Opção 1, Opção 2, Opção 3">
+                    </div>
+                `;
+                
+                container.appendChild(perguntaDiv);
+                perguntaCounter++;
+            }
+            
+            function removerPergunta(id) {
+                const element = document.getElementById(id);
+                if (element) element.remove();
+            }
+            
+            function mudarTipoPergunta(select) {
+                const perguntaDiv = select.closest('.pergunta-item');
+                const opcoesDiv = perguntaDiv.querySelector('.pergunta-opcoes');
+                const tipo = select.value;
+                
+                if (opcoesDiv) {
+                    opcoesDiv.style.display = (tipo === 'select' || tipo === 'radio' || tipo === 'radio_obs') ? 'block' : 'none';
+                }
+            }
+            
+            function adicionarPerguntaComDados(pergunta) {
+                const container = document.getElementById('perguntasContainer');
+                const perguntaDiv = document.createElement('div');
+                perguntaDiv.className = 'pergunta-item';
+                const currentId = perguntaCounter;
+                perguntaDiv.id = `pergunta_${currentId}`;
+                
+                perguntaDiv.innerHTML = `
+                    <div class="pergunta-header">
+                        <span>Pergunta ${perguntaCounter + 1}</span>
+                        <button type="button" onclick="removerPergunta('pergunta_${currentId}')" style="background: none; border: none; color: #ef4444; cursor: pointer;">×</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Texto da Pergunta</label>
+                        <input type="text" class="pergunta-texto" value="${pergunta.texto.replace(/"/g, '&quot;')}" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select class="pergunta-tipo" onchange="mudarTipoPergunta(this)">
+                            <option value="text" ${pergunta.tipo === 'text' ? 'selected' : ''}>Texto Livre</option>
+                            <option value="textarea" ${pergunta.tipo === 'textarea' ? 'selected' : ''}>Texto Longo</option>
+                            <option value="select" ${pergunta.tipo === 'select' ? 'selected' : ''}>Combo Box</option>
+                            <option value="radio" ${pergunta.tipo === 'radio' ? 'selected' : ''}>Múltipla Escolha</option>
+                            <option value="radio_obs" ${pergunta.tipo === 'radio_obs' ? 'selected' : ''}>Múltipla Escolha c/ Observação</option>
+                            <option value="date" ${pergunta.tipo === 'date' ? 'selected' : ''}>Data</option>
+                            <option value="file" ${pergunta.tipo === 'file' ? 'selected' : ''}>Foto</option>
+                        </select>
+                    </div>
+                    <div class="pergunta-opcoes" style="display: ${pergunta.tipo === 'select' || pergunta.tipo === 'radio' || pergunta.tipo === 'radio_obs' ? 'block' : 'none'};">
+                        <label>Opções (separadas por vírgula)</label>
+                        <input type="text" class="pergunta-opcoes-input" value="${pergunta.opcoes ? pergunta.opcoes.join(', ') : ''}" placeholder="Opção 1, Opção 2, Opção 3">
+                    </div>
+                `;
+                
+                container.appendChild(perguntaDiv);
+                perguntaCounter++;
+            }
+            
+            // ==================== MODAL CHECKLIST ====================
+            function abrirModalChecklist(checklistId = null) {
+                currentChecklistEdit = checklistId;
+                document.getElementById('modalChecklistTitle').textContent = checklistId ? 'Editar Checklist' : 'Novo Checklist';
+                document.getElementById('checklistNome').value = '';
+                document.getElementById('checklistDescricao').value = '';
+                document.getElementById('perguntasContainer').innerHTML = '';
+                perguntaCounter = 0;
+                
+                if (checklistId) {
+                    carregarChecklistParaEdicao(checklistId);
+                } else {
+                    adicionarPergunta();
+                    carregarListaUsuarios([]);
+                }
+                
+                document.getElementById('modalChecklist').style.display = 'flex';
+            }
+            
+            async function carregarChecklistParaEdicao(checklistId) {
+                const supabase = initSupabase();
+                const { data, error } = await supabase
+                    .from('checklists')
+                    .select('*')
+                    .eq('id', checklistId)
+                    .single();
+                    
+                if (error) {
+                    alert('Erro ao carregar checklist: ' + error.message);
+                    return;
+                }
+                
+                document.getElementById('checklistNome').value = data.nome;
+                document.getElementById('checklistDescricao').value = data.descricao || '';
+                
+                const { data: usuariosVinculados } = await supabase
+                    .from('checklist_usuarios')
+                    .select('usuario_id')
+                    .eq('checklist_id', checklistId);
+                    
+                const userIds = usuariosVinculados?.map(u => u.usuario_id) || [];
+                await carregarListaUsuarios(userIds);
+                
+                const perguntas = data.perguntas || [];
+                perguntas.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+                
+                perguntas.forEach(pergunta => {
+                    adicionarPerguntaComDados(pergunta);
+                });
+            }
+            
+            // Salvar checklist
+            const checklistForm = document.getElementById('checklistForm');
+            if (checklistForm) {
+                checklistForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const supabase = initSupabase();
+                    const nome = document.getElementById('checklistNome').value;
+                    const descricao = document.getElementById('checklistDescricao').value;
+                    
+                    const perguntas = [];
+                    const perguntaDivs = document.querySelectorAll('.pergunta-item');
+                    
+                    perguntaDivs.forEach((div, index) => {
+                        const texto = div.querySelector('.pergunta-texto')?.value;
+                        const tipo = div.querySelector('.pergunta-tipo')?.value;
+                        let opcoes = null;
+                        
+                        if (tipo === 'select' || tipo === 'radio' || tipo === 'radio_obs') {
+                            const opcoesInput = div.querySelector('.pergunta-opcoes-input')?.value;
+                            if (opcoesInput) {
+                                opcoes = opcoesInput.split(',').map(o => o.trim());
+                            }
+                        }
+                        
+                        if (texto) {
+                            perguntas.push({
+                                ordem: index,
+                                texto: texto,
+                                tipo: tipo,
+                                opcoes: opcoes,
+                                obrigatorio: true
+                            });
+                        }
+                    });
+                    
+                    const checklistData = {
+                        nome: nome,
+                        descricao: descricao,
+                        perguntas: perguntas,
+                        created_by: currentUser.id,
+                        ativo: true
+                    };
+                    
+                    let result;
+                    let checklistId;
+                    
+                    if (currentChecklistEdit) {
+                        result = await supabase
+                            .from('checklists')
+                            .update(checklistData)
+                            .eq('id', currentChecklistEdit);
+                        checklistId = currentChecklistEdit;
+                    } else {
+                        result = await supabase
+                            .from('checklists')
+                            .insert([checklistData])
+                            .select();
+                        checklistId = result.data?.[0]?.id;
+                    }
+                    
+                    if (result.error) {
+                        alert('Erro ao salvar checklist: ' + result.error.message);
+                        return;
+                    }
+                    
+                    const usuariosSelecionados = [];
+                    document.querySelectorAll('#userListContainer input:checked').forEach(cb => {
+                        usuariosSelecionados.push(cb.value);
+                    });
+                    
+                    await supabase
+                        .from('checklist_usuarios')
+                        .delete()
+                        .eq('checklist_id', checklistId);
+                    
+                    for (const usuarioId of usuariosSelecionados) {
+                        await supabase
+                            .from('checklist_usuarios')
+                            .insert([{
+                                checklist_id: checklistId,
+                                usuario_id: usuarioId
+                            }]);
+                    }
+                    
+                    alert('Checklist salvo com sucesso!');
+                    fecharModalChecklist();
+                    carregarDados();
+                });
+            }
+            
+            // ==================== MODAL RESPONDER ====================
+            async function abrirModalResponder(checklistId) {
+                const supabase = initSupabase();
+                const { data: checklist, error } = await supabase
+                    .from('checklists')
+                    .select('*')
+                    .eq('id', checklistId)
+                    .single();
+                    
+                if (error) {
+                    alert('Erro ao carregar checklist: ' + error.message);
+                    return;
+                }
+                
+                document.getElementById('responderChecklistTitle').textContent = checklist.nome;
+                
+                const container = document.getElementById('perguntasRespostaContainer');
+                container.innerHTML = '';
+                
+                const perguntas = checklist.perguntas || [];
+                perguntas.sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+                
+                perguntas.forEach((pergunta, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.innerHTML = `<label>${pergunta.texto} ${pergunta.obrigatorio ? '*' : ''}</label>`;
+                    
+                    if (pergunta.tipo === 'text') {
+                        div.innerHTML += `<input type="text" name="pergunta_${idx}" class="resposta-input">`;
+                    } else if (pergunta.tipo === 'textarea') {
+                        div.innerHTML += `<textarea name="pergunta_${idx}" rows="3" class="resposta-input"></textarea>`;
+                    } else if (pergunta.tipo === 'select') {
+                        let select = `<select name="pergunta_${idx}" class="resposta-input">`;
+                        select += `<option value="">Selecione...</option>`;
+                        if (pergunta.opcoes) {
+                            pergunta.opcoes.forEach(op => {
+                                select += `<option value="${op}">${op}</option>`;
+                            });
+                        }
+                        select += `</select>`;
+                        div.innerHTML += select;
+                    } else if (pergunta.tipo === 'radio') {
+                        if (pergunta.opcoes) {
+                            pergunta.opcoes.forEach(op => {
+                                div.innerHTML += `
+                                    <label style="display: inline-block; margin-right: 1rem;">
+                                        <input type="radio" name="pergunta_${idx}" value="${op}"> ${op}
+                                    </label>
+                                `;
+                            });
+                        }
+                    } else if (pergunta.tipo === 'radio_obs') {
+                        if (pergunta.opcoes) {
+                            pergunta.opcoes.forEach((op, opIdx) => {
+                                div.innerHTML += `
+                                    <div style="margin-bottom: 0.5rem;">
+                                        <input type="radio" name="pergunta_${idx}" value="${op}" onchange="mostrarObservacao(this, 'obs_${idx}_${opIdx}')">
+                                        <span>${op}</span>
+                                        <input type="text" id="obs_${idx}_${opIdx}" placeholder="Observação" style="display: none; margin-top: 0.5rem; width: 100%;">
+                                    </div>
+                                `;
+                            });
+                        }
+                    } else if (pergunta.tipo === 'date') {
+                        div.innerHTML += `<input type="date" name="pergunta_${idx}" class="resposta-input">`;
+                    } else if (pergunta.tipo === 'file') {
+                        div.innerHTML += `<input type="file" name="pergunta_${idx}" accept="image/*" class="resposta-input">`;
+                    }
+                    
+                    container.appendChild(div);
+                });
+                
+                document.getElementById('modalResponder').style.display = 'flex';
+                window.currentResponderChecklistId = checklistId;
+            }
+            
+            function mostrarObservacao(radio, obsId) {
+                const obsInput = document.getElementById(obsId);
+                if (radio.checked) {
+                    obsInput.style.display = 'block';
+                } else {
+                    obsInput.style.display = 'none';
+                }
+            }
+            
+            // Salvar respostas
+            const responderForm = document.getElementById('responderForm');
+            if (responderForm) {
+                responderForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const supabase = initSupabase();
+                    const respostas = [];
+                    const inputs = document.querySelectorAll('#perguntasRespostaContainer .resposta-input');
+                    
+                    for (let i = 0; i < inputs.length; i++) {
+                        const input = inputs[i];
+                        let valor = input.value;
+                        
+                        if (input.type === 'radio' && input.checked) {
+                            const parent = input.parentElement;
+                            const obsInput = parent.querySelector('input[type="text"]');
+                            if (obsInput && obsInput.value) {
+                                valor = `${input.value} - Obs: ${obsInput.value}`;
+                            }
+                        }
+                        
+                        if (input.type === 'file' && input.files && input.files[0]) {
+                            const file = input.files[0];
+                            const fileName = `${Date.now()}_${file.name}`;
+                            const { error } = await supabase.storage
+                                .from('checklist-fotos')
+                                .upload(fileName, file);
+                            
+                            if (!error) {
+                                const { data: { publicUrl } } = supabase.storage
+                                    .from('checklist-fotos')
+                                    .getPublicUrl(fileName);
+                                valor = publicUrl;
+                            }
+                        }
+                        
+                        respostas.push({
+                            pergunta_idx: i,
+                            valor: valor
+                        });
+                    }
+                    
+                    const respostaData = {
+                        checklist_id: window.currentResponderChecklistId,
+                        tecnico_id: currentUser.id,
+                        respostas: respostas,
+                        status: 'finalizada',
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    const { error } = await supabase
+                        .from('respostas')
+                        .insert([respostaData]);
+                        
+                    if (error) {
+                        alert('Erro ao salvar respostas: ' + error.message);
+                    } else {
+                        alert('Respostas enviadas com sucesso!');
+                        fecharModalResponder();
+                        carregarDados();
+                    }
+                });
+            }
+            
+            // ==================== FUNÇÕES AUXILIARES ====================
+            async function verDetalhesResposta(respostaId) {
+                const supabase = initSupabase();
+                const { data, error } = await supabase
+                    .from('respostas')
+                    .select(`*, checklists (nome, perguntas), profiles (name)`)
+                    .eq('id', respostaId)
+                    .single();
+                    
+                if (error) return;
+                
+                const container = document.getElementById('detalhesConteudo');
+                container.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <strong>Checklist:</strong> ${data.checklists?.nome}<br>
+                        <strong>Técnico:</strong> ${data.profiles?.name}<br>
+                        <strong>Data:</strong> ${new Date(data.created_at).toLocaleString('pt-BR')}<br>
+                        <strong>Status:</strong> <span class="badge badge-${data.status}">${getStatusText(data.status)}</span>
+                    </div>
+                    <hr style="margin: 1rem 0;">
+                    <h4>Respostas:</h4>
+                `;
+                
+                const perguntas = data.checklists?.perguntas || [];
+                const respostas = data.respostas || [];
+                
+                respostas.forEach((resp, idx) => {
+                    const pergunta = perguntas[idx];
+                    if (pergunta) {
+                        const div = document.createElement('div');
+                        div.style.marginBottom = '1rem';
+                        div.style.padding = '0.5rem';
+                        div.style.background = '#f9fafb';
+                        div.style.borderRadius = '8px';
+                        div.innerHTML = `
+                            <strong>${pergunta.texto}:</strong><br>
+                            ${resp.valor && resp.valor.includes('supabase.co') ? 
+                                `<img src="${resp.valor}" style="max-width: 100%; border-radius: 8px; margin-top: 0.5rem;">` : 
+                                (resp.valor || '-')}
+                        `;
+                        container.appendChild(div);
+                    }
+                });
+                
+                document.getElementById('modalDetalhes').style.display = 'flex';
+            }
+            
+            function getStatusText(status) {
+                const map = { 'aberta': 'Em Aberto', 'execucao': 'Em Execução', 'finalizada': 'Finalizada' };
+                return map[status] || status;
+            }
+            
+            function switchTab(tabName) {
+                const tabs = ['checklists', 'relatorios', 'gerenciar'];
+                tabs.forEach(tab => {
+                    const el = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+                    if (el) el.style.display = 'none';
+                });
+                
+                const target = document.getElementById(`tab${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`);
+                if (target) target.style.display = 'block';
+                
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                if (event && event.target) event.target.classList.add('active');
+            }
+            
+            function fecharModalChecklist() { document.getElementById('modalChecklist').style.display = 'none'; }
+            function fecharModalResponder() { document.getElementById('modalResponder').style.display = 'none'; }
+            function fecharModalDetalhes() { document.getElementById('modalDetalhes').style.display = 'none'; }
+            
+            function editarChecklist(id) { abrirModalChecklist(id); }
+            
+            function verRespostasChecklist(id) {
+                switchTab('relatorios');
+                const select = document.getElementById('filtroChecklist');
+                if (select) select.value = id;
+                aplicarFiltros();
+            }
+            
+            window.onclick = function(event) {
+                if (event.target.classList && event.target.classList.contains('modal')) {
+                    event.target.style.display = 'none';
+                }
+            };
+            
+            // Expor funções globalmente
+            window.abrirModalResponder = abrirModalResponder;
+            window.verDetalhesResposta = verDetalhesResposta;
+            window.editarChecklist = editarChecklist;
+            window.verRespostasChecklist = verRespostasChecklist;
+            window.adicionarPergunta = adicionarPergunta;
+            window.removerPergunta = removerPergunta;
+            window.mudarTipoPergunta = mudarTipoPergunta;
+            window.mostrarObservacao = mostrarObservacao;
+            window.switchTab = switchTab;
+            window.aplicarFiltros = aplicarFiltros;
+            window.abrirModalChecklist = abrirModalChecklist;
+            window.fecharModalChecklist = fecharModalChecklist;
+            window.fecharModalResponder = fecharModalResponder;
+            window.fecharModalDetalhes = fecharModalDetalhes;
+            window.logout = logout;
+            
+        })();
+    </script>
+</body>
+</html>
